@@ -1,0 +1,24 @@
+{
+  "name": "custom-react-lib",
+  "version": "0.1.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "vitest run",
+    "build": "tsc",
+    "test:watch": "vitest",
+    "dev:watch": "tsc --watch",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "format": "prettier --write src/**/*.{ts,tsx,js,jsx,json,md}",
+    "format:check": "prettier --check src/**/*.{ts,tsx,js,jsx,json,md}"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "prettier": "^3.2.5",
+    "eslint": "^8.57.0",
+    "vitest": "^3.2.4"
+  }
+}
