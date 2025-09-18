@@ -1,7 +1,7 @@
 export type HTMLelement = {
-  type: string;
+  type: string | Function;
   props: HTMLprop | null;
-  childrens?: string | (string | HTMLelement)[];
+  childrens?: (string | HTMLelement)[];
 };
 
 export type HTMLprop = {
