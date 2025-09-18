@@ -17,4 +17,23 @@ export function createElement(
   }
 }
 
-export function render(elements: HTMLelement[]) {}
+export function render(
+  elements: string | (HTMLelement | string)[],
+  root: HTMLElement
+) {
+  if (Array.isArray(elements)) {
+    for (const elem of elements) {
+      if (typeof elem === 'object') {
+        const element = document.createElement(elem.type);
+        root.appendChild(element);
+        if (elem.childrens) {
+          render(elem.childrens, element);
+        }
+      } else {
+        root.appendChild(document.createTextNode(elem));
+      }
+    }
+  } else if (typeof elements === 'string') {
+    root.appendChild(document.createTextNode(elements));
+  }
+}
