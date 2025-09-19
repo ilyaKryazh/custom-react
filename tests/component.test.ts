@@ -8,7 +8,7 @@ describe('createElement', () => {
       expect(element).toEqual({
         type: 'div',
         props: null,
-        childrens: 'Hello World',
+        childrens: ['Hello World'],
       });
     });
 
@@ -21,7 +21,7 @@ describe('createElement', () => {
       expect(element).toEqual({
         type: 'button',
         props: { id: 'btn1', className: 'btn' },
-        childrens: 'Click me',
+        childrens: ['Click me'],
       });
     });
 
@@ -30,7 +30,7 @@ describe('createElement', () => {
       expect(element).toEqual({
         type: 'img',
         props: { src: 'image.jpg', alt: 'Image' },
-        childrens: undefined,
+        childrens: [],
       });
     });
 
@@ -39,17 +39,19 @@ describe('createElement', () => {
       expect(element).toEqual({
         type: 'span',
         props: null,
-        childrens: 'text',
+        childrens: ['text'],
       });
     });
 
     test('creates element with array of children', () => {
       const child1 = createElement('span', null, 'Child 1');
       const child2 = createElement('span', null, 'Child 2');
-      const element = createElement('div', { className: 'container' }, [
+      const element = createElement(
+        'div',
+        { className: 'container' },
         child1,
-        child2,
-      ]);
+        child2
+      );
 
       expect(element).toEqual({
         type: 'div',
@@ -60,11 +62,13 @@ describe('createElement', () => {
 
     test('creates element with mixed children types', () => {
       const childElement = createElement('strong', null, 'Bold text');
-      const element = createElement('p', null, [
+      const element = createElement(
+        'p',
+        null,
         'Normal text',
         childElement,
-        ' more text',
-      ]);
+        ' more text'
+      );
 
       expect(element).toEqual({
         type: 'p',
@@ -82,9 +86,9 @@ describe('createElement', () => {
 
       const element = createElement(Button, { label: 'Click me', id: 'btn1' });
       expect(element).toEqual({
-        type: 'button',
+        type: Button,
         props: { label: 'Click me', id: 'btn1' },
-        childrens: 'Click me',
+        childrens: [],
       });
     });
 
@@ -95,9 +99,9 @@ describe('createElement', () => {
 
       const element = createElement(Title, null);
       expect(element).toEqual({
-        type: 'h1',
+        type: Title,
         props: null,
-        childrens: 'My Title',
+        childrens: [],
       });
     });
 
@@ -105,7 +109,7 @@ describe('createElement', () => {
       const Card = (props: any) => {
         const header = createElement('h2', null, props.title);
         const content = createElement('p', null, props.content);
-        return createElement('div', { className: 'card' }, [header, content]);
+        return createElement('div', { className: 'card' }, header, content);
       };
 
       const element = createElement(Card, {
@@ -114,20 +118,12 @@ describe('createElement', () => {
       });
 
       expect(element).toEqual({
-        type: 'div',
-        props: { className: 'card' },
-        childrens: [
-          {
-            type: 'h2',
-            props: null,
-            childrens: 'Card Title',
-          },
-          {
-            type: 'p',
-            props: null,
-            childrens: 'Card content goes here',
-          },
-        ],
+        type: Card,
+        props: {
+          title: 'Card Title',
+          content: 'Card content goes here',
+        },
+        childrens: [],
       });
     });
 
@@ -153,13 +149,9 @@ describe('createElement', () => {
       });
 
       expect(element).toEqual({
-        type: 'div',
+        type: Container,
         props: { className: 'wrapper', buttonLabel: 'Nested Button' },
-        childrens: {
-          type: 'button',
-          props: { className: 'nested-btn', label: 'Nested Button' },
-          childrens: 'Nested Button',
-        },
+        childrens: [],
       });
     });
 
@@ -172,7 +164,11 @@ describe('createElement', () => {
       };
 
       const element = createElement(ConditionalComponent, { show: false });
-      expect(element).toBeNull();
+      expect(element).toEqual({
+        type: ConditionalComponent,
+        props: { show: false },
+        childrens: [],
+      });
     });
 
     test('handles function component that returns undefined', () => {
@@ -181,7 +177,11 @@ describe('createElement', () => {
       };
 
       const element = createElement(EmptyComponent, {});
-      expect(element).toBeUndefined();
+      expect(element).toEqual({
+        type: EmptyComponent,
+        props: {},
+        childrens: [],
+      });
     });
   });
 
@@ -191,7 +191,7 @@ describe('createElement', () => {
       expect(element).toEqual({
         type: '',
         props: null,
-        childrens: 'content',
+        childrens: ['content'],
       });
     });
 
@@ -204,7 +204,7 @@ describe('createElement', () => {
       expect(element).toEqual({
         type: 'div',
         props: { tabIndex: 0, dataId: 123 },
-        childrens: 'content',
+        childrens: ['content'],
       });
     });
 
@@ -217,7 +217,7 @@ describe('createElement', () => {
       expect(element).toEqual({
         type: 'input',
         props: { disabled: true, required: false },
-        childrens: '',
+        childrens: [''],
       });
     });
 
@@ -242,13 +242,13 @@ describe('createElement', () => {
       );
 
       expect(buttonElement).toEqual({
-        type: 'button',
+        type: ComplexComponent,
         props: {
           type: 'button',
           className: 'btn',
           children: 'Click me',
         },
-        childrens: 'Click me',
+        childrens: ['Click me'],
       });
     });
   });
