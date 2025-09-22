@@ -1,11 +1,10 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, createElement } from '../src/index';
-import { HTMLelement } from '../src/tree-types';
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
+import { render, createElement, prevNode } from '../src/index';
+import { vNode } from '../src/tree-types';
 
 describe('render function', () => {
   let rootElement: HTMLElement;
-
-  beforeEach(() => {
+  beforeAll(() => {
     // Create a fresh root element for each test
     rootElement = document.createElement('div');
     rootElement.innerHTML = ''; // Clear any existing content
@@ -31,7 +30,7 @@ describe('render function', () => {
 
   describe('HTML element rendering', () => {
     it('should render a simple HTML element', () => {
-      const element: HTMLelement = {
+      const element: vNode = {
         type: 'div',
         props: null,
         childrens: [],
@@ -44,7 +43,7 @@ describe('render function', () => {
     });
 
     it('should render HTML element with text content', () => {
-      const element: HTMLelement = {
+      const element: vNode = {
         type: 'p',
         props: null,
         childrens: ['Hello World'],
@@ -58,7 +57,7 @@ describe('render function', () => {
     });
 
     it('should render HTML element with props/attributes', () => {
-      const element: HTMLelement = {
+      const element: vNode = {
         type: 'div',
         props: {
           id: 'test-id',
@@ -77,7 +76,7 @@ describe('render function', () => {
     });
 
     it('should render HTML element with numeric and boolean props', () => {
-      const element: HTMLelement = {
+      const element: vNode = {
         type: 'input',
         props: {
           value: 42,
@@ -96,7 +95,7 @@ describe('render function', () => {
     });
 
     it('should render nested HTML elements', () => {
-      const element: HTMLelement = {
+      const element: vNode = {
         type: 'div',
         props: { id: 'parent' },
         childrens: [
@@ -119,7 +118,6 @@ describe('render function', () => {
       expect(child.textContent).toBe('Nested text');
     });
   });
-
   describe('function component rendering', () => {
     it('should render function component', () => {
       const MyComponent = (props: any) => ({
@@ -128,7 +126,7 @@ describe('render function', () => {
         childrens: [props.children],
       });
 
-      const element: HTMLelement = {
+      const element: vNode = {
         type: MyComponent,
         props: { id: 'component-id', children: 'Component content' },
         childrens: [],
@@ -145,12 +143,11 @@ describe('render function', () => {
     it('should render function component that returns string', () => {
       const TextComponent = () => 'Function component text';
 
-      const element: HTMLelement = {
+      const element: vNode = {
         type: TextComponent,
         props: {},
         childrens: [],
       };
-
       render(element, rootElement);
 
       expect(rootElement.textContent).toBe('Function component text');
@@ -162,7 +159,7 @@ describe('render function', () => {
         { type: 'li', props: null, childrens: ['Item 2'] },
       ];
 
-      const element: HTMLelement = {
+      const element: vNode = {
         type: ListComponent,
         props: {},
         childrens: [],
@@ -181,15 +178,13 @@ describe('render function', () => {
   describe('array rendering', () => {
     it('should render array of strings', () => {
       const elements = ['Hello', ' ', 'World'];
-
       render(elements, rootElement);
-
       expect(rootElement.textContent).toBe('Hello World');
       expect(rootElement.childNodes.length).toBe(3);
     });
 
     it('should render array of HTML elements', () => {
-      const elements: HTMLelement[] = [
+      const elements: vNode[] = [
         { type: 'h1', props: null, childrens: ['Title'] },
         { type: 'p', props: null, childrens: ['Paragraph'] },
       ];
@@ -204,7 +199,7 @@ describe('render function', () => {
     });
 
     it('should render mixed array of strings and elements', () => {
-      const elements: (string | HTMLelement)[] = [
+      const elements: (string | vNode)[] = [
         'Start ',
         { type: 'strong', props: null, childrens: ['bold'] },
         ' end',
@@ -227,7 +222,7 @@ describe('render function', () => {
 
   describe('complex nested structures', () => {
     it('should render deeply nested elements', () => {
-      const element: HTMLelement = {
+      const element: vNode = {
         type: 'div',
         props: { id: 'level1' },
         childrens: [
@@ -267,7 +262,7 @@ describe('render function', () => {
         ],
       });
 
-      const element: HTMLelement = {
+      const element: vNode = {
         type: CardComponent,
         props: {
           title: 'Card Title',
@@ -291,7 +286,7 @@ describe('render function', () => {
 
   describe('edge cases', () => {
     it('should handle null/undefined props gracefully', () => {
-      const element: HTMLelement = {
+      const element: vNode = {
         type: 'div',
         props: null,
         childrens: ['Content'],
@@ -302,7 +297,7 @@ describe('render function', () => {
     });
 
     it('should handle empty children array', () => {
-      const element: HTMLelement = {
+      const element: vNode = {
         type: 'div',
         props: { id: 'empty' },
         childrens: [],
@@ -315,7 +310,7 @@ describe('render function', () => {
     });
 
     it('should handle undefined children', () => {
-      const element: HTMLelement = {
+      const element: vNode = {
         type: 'div',
         props: { id: 'no-children' },
         // childrens is undefined

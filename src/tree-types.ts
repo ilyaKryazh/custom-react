@@ -1,7 +1,7 @@
-export type HTMLelement = {
+export type vNode = {
   type: string | Function;
   props: HTMLprop | null;
-  childrens?: (string | HTMLelement)[];
+  childrens?: (string | vNode)[];
 };
 
 export type HTMLprop = {
