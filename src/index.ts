@@ -2,6 +2,10 @@ import { vNode, HTMLprop } from './tree-types';
 
 export var prevNode: null | string | vNode | (vNode | string)[] = null;
 
+export function resetPrevNode() {
+  prevNode = null;
+}
+
 export function createElement(
   type: string | Function,
   props: HTMLprop | null,
@@ -19,12 +23,24 @@ export function render(
   root: HTMLElement
 ) {
   if (prevNode === null) {
-    root.appendChild(createNode(elements));
+    if (elements == null) {
+      // Don't render anything for null/undefined
+      return;
+    }
+    const node = createNode(elements);
+    if (node.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+      // Append all children of the fragment
+      while (node.firstChild) {
+        root.appendChild(node.firstChild);
+      }
+    } else {
+      root.appendChild(node);
+    }
   } else {
     diff(root, prevNode, elements);
   }
   prevNode = elements;
-}
+} 
 
 export function diff(
   parent: HTMLElement,
@@ -69,14 +85,33 @@ export function diff(
     }
 
     if (typeof old_Node === 'string' && typeof new_Node === 'string') {
-      if (old_Node !== new_Node && domNode.nodeType === Node.TEXT_NODE) {
+      if (
+        old_Node !== new_Node &&
+        domNode &&
+        domNode.nodeType === Node.TEXT_NODE
+      ) {
         domNode.textContent = new_Node;
       }
       continue;
     }
 
     if (typeof old_Node === 'string' && typeof new_Node === 'object') {
-      parent.replaceChild(createNode(new_Node), domNode);
+      if (domNode) {
+        const newNode = createNode(new_Node);
+        if (newNode.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+          // Replace with the first child of the fragment, then append the rest
+          const firstChild = newNode.firstChild;
+          if (firstChild) {
+            parent.replaceChild(firstChild, domNode);
+            // Append remaining children
+            while (newNode.firstChild) {
+              parent.insertBefore(newNode.firstChild, firstChild.nextSibling);
+            }
+          }
+        } else {
+          parent.replaceChild(newNode, domNode);
+        }
+      }
       continue;
     }
 
@@ -87,13 +122,30 @@ export function diff(
         continue;
       }
 
-      parent.replaceChild(document.createTextNode(new_Node), domNode);
+      if (domNode) {
+        parent.replaceChild(document.createTextNode(new_Node), domNode);
+      }
       continue;
     }
 
     if (typeof old_Node === 'object' && typeof new_Node === 'object') {
       if (old_Node.type !== new_Node.type) {
-        parent.replaceChild(createNode(new_Node), domNode);
+        if (domNode) {
+          const newNode = createNode(new_Node);
+          if (newNode.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+            // Replace with the first child of the fragment, then append the rest
+            const firstChild = newNode.firstChild;
+            if (firstChild) {
+              parent.replaceChild(firstChild, domNode);
+              // Append remaining children
+              while (newNode.firstChild) {
+                parent.insertBefore(newNode.firstChild, firstChild.nextSibling);
+              }
+            }
+          } else {
+            parent.replaceChild(newNode, domNode);
+          }
+        }
         continue;
       }
 
@@ -103,7 +155,7 @@ export function diff(
         continue;
       }
 
-      if (typeof new_Node.type === 'string') {
+      if (typeof new_Node.type === 'string' && domNode) {
         const el = domNode as HTMLElement;
 
         updateProps(el, old_Node.props || {}, new_Node.props || {});
@@ -127,6 +179,10 @@ function createNode(
 
   if (typeof vNode === 'string') {
     return document.createTextNode(vNode);
+  }
+
+  if (vNode == null) {
+    return document.createTextNode('');
   }
 
   if (typeof vNode.type === 'function') {
@@ -154,8 +210,10 @@ function updateProps(
   oldProps: Record<string, any>,
   newProps: Record<string, any>
 ) {
+  if (!el) return;
+
   for (const key in oldProps) {
-    if (!(key in oldProps)) {
+    if (!(key in newProps)) {
       el.removeAttribute(key);
     }
   }
