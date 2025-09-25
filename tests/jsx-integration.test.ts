@@ -22,7 +22,6 @@ describe('JSX Integration Tests - Real JSX Files', () => {
       // Verify the root div exists
       expect(rootElement.children.length).toBe(1);
       const appDiv = rootElement.firstElementChild as HTMLElement;
-      console.log(rootElement.innerHTML);
       expect(appDiv.tagName).toBe('DIV');
       expect(appDiv.className).toBe('app');
 
