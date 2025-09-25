@@ -1,4 +1,5 @@
 import { vNode, HTMLprop } from './tree-types';
+import { createNode, updateProps } from './utils';
 
 export var prevNode: null | string | vNode | (vNode | string)[] = null;
 
@@ -40,7 +41,7 @@ export function render(
     diff(root, prevNode, elements);
   }
   prevNode = elements;
-} 
+}
 
 export function diff(
   parent: HTMLElement,
@@ -162,65 +163,6 @@ export function diff(
 
         diff(el, old_Node.childrens, new_Node.childrens);
       }
-    }
-  }
-}
-
-function createNode(
-  vNode: vNode | string | (string | vNode)[]
-): Node | DocumentFragment {
-  if (Array.isArray(vNode)) {
-    const fragment = document.createDocumentFragment();
-    for (const node of vNode) {
-      fragment.appendChild(createNode(node));
-    }
-    return fragment;
-  }
-
-  if (typeof vNode === 'string') {
-    return document.createTextNode(vNode);
-  }
-
-  if (vNode == null) {
-    return document.createTextNode('');
-  }
-
-  if (typeof vNode.type === 'function') {
-    return createNode(vNode.type(vNode.props || {}));
-  }
-
-  const el = document.createElement(vNode.type);
-  if (vNode.props) {
-    for (const [key, value] of Object.entries(vNode.props)) {
-      el.setAttribute(key, String(value));
-    }
-  }
-
-  if (vNode.childrens) {
-    vNode.childrens.forEach(child => {
-      el.appendChild(createNode(child));
-    });
-  }
-
-  return el;
-}
-
-function updateProps(
-  el: HTMLElement,
-  oldProps: Record<string, any>,
-  newProps: Record<string, any>
-) {
-  if (!el) return;
-
-  for (const key in oldProps) {
-    if (!(key in newProps)) {
-      el.removeAttribute(key);
-    }
-  }
-
-  for (const key in newProps) {
-    if (oldProps[key] !== newProps[key]) {
-      el.setAttribute(key, String(newProps[key]));
     }
   }
 }

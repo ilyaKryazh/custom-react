@@ -4,7 +4,14 @@
     "module": "ESNext",
     "declaration": true,
     "outDir": "dist",
-    "strict": true
+    "strict": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "my-lib",
+    "baseUrl": ".",
+    "paths": {
+      "my-lib/jsx-runtime": ["./jsx/index.ts"],
+      "my-lib/jsx-dev-runtime": ["./jsx/index.ts"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "jsx", "tests"]
 }
