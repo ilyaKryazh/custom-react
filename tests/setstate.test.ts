@@ -19,7 +19,6 @@ describe('setState Hook Test', () => {
   it.only('should update state and return new value when setState is called', () => {
     // Render the Counter component using the public API
     renderComponent(Counter, rootElement);
-    console.log('rootElement: ', rootElement.innerHTML);
 
     // Verify initial render
     const h2 = rootElement.querySelector('h2');
