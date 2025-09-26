@@ -3,7 +3,7 @@ import { render, resetPrevNode } from '../src/index';
 import App from './jsx/App';
 
 describe('JSX Integration Tests - Real JSX Files', () => {
-  let rootElement: HTMLElement;
+  let rootElement: HTMLElement; 
 
   beforeEach(() => {
     // Reset the prevNode state before each test
@@ -40,7 +40,24 @@ describe('JSX Integration Tests - Real JSX Files', () => {
       const button = appDiv.children[2] as HTMLButtonElement;
       expect(button.tagName).toBe('BUTTON');
       expect(button.textContent).toBe('Click me');
-      expect(button.getAttribute('onClick')).toBe('() => alert("Button clicked!")');
+      // Check that the button has an onclick event listener attached
+      expect(button.onclick).toBeDefined();
+
+      // Mock the alert function to capture the message
+      let alertMessage: string | null = null;
+      const originalAlert = window.alert;
+      window.alert = (message: string) => {
+        alertMessage = message;
+      };
+
+      // Simulate the button click
+      button.click();
+
+      // Wait for the click to be processed and check the alert message
+      expect(alertMessage).toBe('Button clicked!');
+
+      // Restore the original alert function
+      window.alert = originalAlert;
     });
 
   });

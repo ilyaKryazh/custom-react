@@ -1,7 +1,12 @@
-import { vNode } from "./tree-types";
+import { vNode } from './tree-types';
 
 export function createNode(
-  vNode: vNode | string | (string | vNode)[]
+  vNode:
+    | vNode
+    | string
+    | number
+    | boolean
+    | (string | number | boolean | vNode)[]
 ): Node | DocumentFragment {
   if (Array.isArray(vNode)) {
     const fragment = document.createDocumentFragment();
@@ -11,8 +16,12 @@ export function createNode(
     return fragment;
   }
 
-  if (typeof vNode === 'string') {
-    return document.createTextNode(vNode);
+  if (
+    typeof vNode === 'string' ||
+    typeof vNode === 'number' ||
+    typeof vNode === 'boolean'
+  ) {
+    return document.createTextNode(vNode.toString());
   }
 
   if (vNode == null) {
@@ -26,7 +35,14 @@ export function createNode(
   const el = document.createElement(vNode.type);
   if (vNode.props) {
     for (const [key, value] of Object.entries(vNode.props)) {
-      el.setAttribute(getHTMLAttributeName(key), String(value));
+      if (isEventProp(key)) {
+        el.addEventListener(
+          getEventName(getHTMLAttributeName(key)),
+          value as unknown as EventListener
+        );
+      } else {
+        el.setAttribute(getHTMLAttributeName(key), String(value));
+      }
     }
   }
 
@@ -48,13 +64,35 @@ export function updateProps(
 
   for (const key in oldProps) {
     if (!(key in newProps)) {
-      el.removeAttribute(key);
+      if (isEventProp(key)) {
+        el.removeEventListener(
+          getEventName(getHTMLAttributeName(key)),
+          oldProps[key]
+        );
+      } else {
+        el.removeAttribute(key);
+      }
     }
   }
 
   for (const key in newProps) {
     if (oldProps[key] !== newProps[key]) {
-      el.setAttribute(getHTMLAttributeName(key), String(newProps[key]));
+      if (isEventProp(key)) {
+        // Remove old event listener if it exists
+        if (oldProps[key]) {
+          el.removeEventListener(
+            getEventName(getHTMLAttributeName(key)),
+            oldProps[key]
+          );
+        }
+        // Add new event listener
+        el.addEventListener(
+          getEventName(getHTMLAttributeName(key)),
+          newProps[key]
+        );
+      } else {
+        el.setAttribute(getHTMLAttributeName(key), String(newProps[key]));
+      }
     }
   }
 }
@@ -80,4 +118,12 @@ function getHTMLAttributeName(jsxPropName: string): string {
   };
 
   return propMap[jsxPropName] || jsxPropName;
+}
+
+function isEventProp(propName: string): boolean {
+  return propName.startsWith('on') && propName.length > 2;
+}
+
+function getEventName(propName: string): string {
+  return propName.slice(2).toLowerCase();
 }

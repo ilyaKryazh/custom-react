@@ -1,10 +1,78 @@
+import {
+  startRender,
+  setCurrentComponentForHooks,
+  cleanupHooks,
+} from './hooks/useState';
 import { vNode, HTMLprop } from './tree-types';
 import { createNode, updateProps } from './utils';
 
-export var prevNode: null | string | vNode | (vNode | string)[] = null;
+export var prevNode:
+  | null
+  | string
+  | number
+  | boolean
+  | vNode
+  | (vNode | string | number | boolean)[] = null;
+
+let currentRoot: HTMLElement | null = null;
+let currentElements:
+  | string
+  | number
+  | boolean
+  | vNode
+  | (vNode | string | number | boolean)[]
+  | null = null;
+
+// Component registry to track active components
+interface ComponentInstance {
+  id: string;
+  component: Function;
+  root: HTMLElement;
+  elements: any;
+}
+
+let componentRegistry: Map<string, ComponentInstance> = new Map();
+let currentComponentId: string | null = null;
 
 export function resetPrevNode() {
   prevNode = null;
+}
+
+// Internal functions for component management
+function generateComponentId(): string {
+  return `component_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+function registerComponent(
+  component: Function,
+  root: HTMLElement,
+  elements: any
+): string {
+  const id = generateComponentId();
+  componentRegistry.set(id, {
+    id,
+    component,
+    root,
+    elements,
+  });
+  return id;
+}
+
+function unregisterComponent(id: string): void {
+  componentRegistry.delete(id);
+  if (currentComponentId === id) {
+    currentComponentId = null;
+  }
+}
+
+function setCurrentComponent(id: string): void {
+  currentComponentId = id;
+  setCurrentComponentForHooks(id);
+}
+
+function getCurrentComponent(): ComponentInstance | null {
+  if (!currentComponentId) return null;
+  return componentRegistry.get(currentComponentId) || null;
 }
 
 export function createElement(
@@ -20,8 +88,14 @@ export function createElement(
 }
 
 export function render(
-  elements: string | vNode | (vNode | string)[],
-  root: HTMLElement
+  elements:
+    | string
+    | number
+    | boolean
+    | vNode
+    | (vNode | string | number | boolean)[],
+  root: HTMLElement,
+  component?: Function
 ) {
   if (prevNode === null) {
     if (elements == null) {
@@ -41,12 +115,30 @@ export function render(
     diff(root, prevNode, elements);
   }
   prevNode = elements;
+  currentRoot = root;
+  currentElements = elements;
+
+  // Register component if provided
+  if (component) {
+    const componentId = registerComponent(component, root, elements);
+    setCurrentComponent(componentId);
+  }
 }
 
 export function diff(
   parent: HTMLElement,
-  old_vNode?: string | vNode | (vNode | string)[],
-  new_vNode?: string | vNode | (vNode | string)[]
+  old_vNode?:
+    | string
+    | number
+    | boolean
+    | vNode
+    | (vNode | string | number | boolean)[],
+  new_vNode?:
+    | string
+    | number
+    | boolean
+    | vNode
+    | (vNode | string | number | boolean)[]
 ) {
   const old_Arr = Array.isArray(old_vNode)
     ? old_vNode
@@ -96,7 +188,11 @@ export function diff(
       continue;
     }
 
-    if (typeof old_Node === 'string' && typeof new_Node === 'object') {
+    if (
+      typeof old_Node === 'string' ||
+      typeof old_Node === 'number' ||
+      (typeof old_Node === 'boolean' && typeof new_Node === 'object')
+    ) {
       if (domNode) {
         const newNode = createNode(new_Node);
         if (newNode.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
@@ -166,3 +262,51 @@ export function diff(
     }
   }
 }
+
+export function rerender() {
+  console.log('rerender works!');
+  if (currentRoot === null) {
+    throw new Error('Cannot rerender without a root element');
+    return;
+  }
+
+  startRender();
+  // Re-execute the component function to get new virtual DOM with updated state
+  const currentComponent = getCurrentComponent();
+  if (currentComponent) {
+    const newElements = currentComponent.component();
+    render(newElements, currentComponent.root);
+  } else if (currentElements) {
+    render(currentElements, currentRoot);
+  }
+}
+
+// Public API for rendering components
+export function renderComponent(component: Function, root: HTMLElement) {
+  startRender();
+  const elements = component();
+  render(elements, root, component);
+}
+
+// Public API for rendering multiple components
+export function renderMultipleComponents(
+  components: Array<{ component: Function; root: HTMLElement }>
+) {
+  components.forEach(({ component, root }) => {
+    renderComponent(component, root);
+  });
+}
+
+// Cleanup function
+export function cleanup() {
+  componentRegistry.clear();
+  currentComponentId = null;
+  currentRoot = null;
+  currentElements = null;
+  prevNode = null;
+  cleanupHooks();
+}
+
+// Export hooks
+export { useState } from './hooks/useState';
+export { useEffect, useRef } from './hooks/useEffect';
