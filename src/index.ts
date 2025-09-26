@@ -264,7 +264,6 @@ export function diff(
 }
 
 export function rerender() {
-  console.log('rerender works!');
   if (currentRoot === null) {
     throw new Error('Cannot rerender without a root element');
     return;

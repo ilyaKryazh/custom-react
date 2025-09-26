@@ -2,7 +2,6 @@
 import { createElement } from '../src/index';
 
 export function jsx(type: any, props: any, key?: any) {
-  console.log('jsx: ', props.children);
   // Extract children from props
   const { children, ...htmlProps } = props || {};
 
