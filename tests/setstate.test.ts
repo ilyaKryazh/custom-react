@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderComponent, resetPrevNode, cleanup } from '../src/index';
-import { startRender } from '../src/hooks/useState';
 import Counter from './jsx/Counter';
 
 describe('setState Hook Test', () => {
@@ -9,7 +8,6 @@ describe('setState Hook Test', () => {
   beforeEach(() => {
     // Reset state before each test
     cleanup();
-    startRender();
     resetPrevNode();
     // Create a fresh root element for each test
     rootElement = document.createElement('div');

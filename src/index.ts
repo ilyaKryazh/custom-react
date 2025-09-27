@@ -1,8 +1,4 @@
-import {
-  startRender,
-  setCurrentComponentForHooks,
-  cleanupHooks,
-} from './hooks/useState';
+import { startRender, cleanupHooks } from './hooks/useState';
 import { vNode, HTMLprop } from './tree-types';
 import { createNode, updateProps } from './utils';
 
@@ -23,16 +19,29 @@ let currentElements:
   | (vNode | string | number | boolean)[]
   | null = null;
 
+export interface HookInstance {
+  type: string;
+  value: any;
+  setter?: (value: any) => void;
+}
+
+export interface HookContextInstance {
+  id: string;
+  hook: HookInstance;
+}
+
 // Component registry to track active components
-interface ComponentInstance {
+export interface ComponentInstance {
   id: string;
   component: Function;
   root: HTMLElement;
   elements: any;
+  hooksIndex: number;
+  context?: Map<string, HookContextInstance>;
 }
 
-let componentRegistry: Map<string, ComponentInstance> = new Map();
-let currentComponentId: string | null = null;
+export let componentRegistry: Map<string, ComponentInstance> = new Map();
+export let componentStack: Array<ComponentInstance> = [];
 
 export function resetPrevNode() {
   prevNode = null;
@@ -54,25 +63,24 @@ function registerComponent(
     component,
     root,
     elements,
+    context: new Map(),
+    hooksIndex: 0,
   });
   return id;
 }
 
-function unregisterComponent(id: string): void {
-  componentRegistry.delete(id);
-  if (currentComponentId === id) {
-    currentComponentId = null;
-  }
-}
-
 function setCurrentComponent(id: string): void {
-  currentComponentId = id;
-  setCurrentComponentForHooks(id);
+  const component = componentRegistry.get(id);
+  if (!component) {
+    throw new Error('Cannot set current component without a component context');
+    return;
+  }
+  componentStack.push(component);
 }
 
-function getCurrentComponent(): ComponentInstance | null {
-  if (!currentComponentId) return null;
-  return componentRegistry.get(currentComponentId) || null;
+function getCurrentComponent(componentId: string): ComponentInstance | null {
+  if (!componentId) return null;
+  return componentRegistry.get(componentId) || null;
 }
 
 export function createElement(
@@ -263,15 +271,28 @@ export function diff(
   }
 }
 
-export function rerender() {
+export function rerender(componentId: string) {
   if (currentRoot === null) {
     throw new Error('Cannot rerender without a root element');
     return;
   }
 
-  startRender();
+  if (!componentId) {
+    throw new Error('Cannot rerender without a component context');
+    return;
+  }
+
+  startRender(componentId);
   // Re-execute the component function to get new virtual DOM with updated state
-  const currentComponent = getCurrentComponent();
+  const currentComponent = getCurrentComponent(componentId);
+  if (!currentComponent) {
+    throw new Error('Cannot rerender without a component context');
+    return;
+  }
+
+  // Set the component in the stack so hooks can access it
+  setCurrentComponent(componentId);
+
   if (currentComponent) {
     const newElements = currentComponent.component();
     render(newElements, currentComponent.root);
@@ -281,29 +302,40 @@ export function rerender() {
 }
 
 // Public API for rendering components
-export function renderComponent(component: Function, root: HTMLElement) {
-  startRender();
-  const elements = component();
-  render(elements, root, component);
+export function renderComponent(
+  componentFunction: Function,
+  root: HTMLElement
+) {
+  // Register component first
+  const componentId = registerComponent(componentFunction, root, null);
+  setCurrentComponent(componentId);
+  startRender(componentId);
+
+  // Now execute the component function (hooks will have context)
+  const elements = componentFunction();
+  render(elements, root, componentFunction);
 }
 
-// Public API for rendering multiple components
-export function renderMultipleComponents(
-  components: Array<{ component: Function; root: HTMLElement }>
-) {
-  components.forEach(({ component, root }) => {
-    renderComponent(component, root);
-  });
+function getComponentContextId(context: HookContextInstance): string {
+  return context.id || '';
 }
 
 // Cleanup function
 export function cleanup() {
   componentRegistry.clear();
-  currentComponentId = null;
+  componentStack = [];
   currentRoot = null;
   currentElements = null;
   prevNode = null;
   cleanupHooks();
+}
+
+export function pushComponent(component: ComponentInstance) {
+  componentStack.push(component);
+}
+
+export function popComponent() {
+  componentStack.pop();
 }
 
 // Export hooks

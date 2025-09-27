@@ -1,31 +1,32 @@
-import { rerender } from "../index";
+import {
+  ComponentInstance,
+  componentRegistry,
+  componentStack,
+  HookContextInstance,
+  HookInstance,
+  rerender,
+} from '../index';
 
 // Hook registry system
-interface HookInstance {
-  type: string;
-  value: any;
-  setter?: Function;
-}
 
 let hookRegistry: Map<string, HookInstance[]> = new Map();
 let currentComponentId: string | null = null;
 let hookIndex = 0;
 
-// Hook system functions
-export function setCurrentComponentForHooks(componentId: string | null) {
-  currentComponentId = componentId;
-}
-
 export function getCurrentComponentId(): string | null {
-  return currentComponentId;
+  return componentStack.length > 0
+    ? componentStack[componentStack.length - 1].id
+    : null;
 }
 
 export function getHookRegistry(): Map<string, HookInstance[]> {
   return hookRegistry;
 }
 
-export function getCurrentHooks(): HookInstance[] {
-  if (!currentComponentId) return [];
+export function getCurrentHooks(
+  id: string,
+  currentComponentId: string
+): HookInstance[] {
   return hookRegistry.get(currentComponentId) || [];
 }
 
@@ -38,12 +39,24 @@ export function getCurrentHookIndex(): number {
   return hookIndex;
 }
 
-export function incrementHookIndex(): void {
-  hookIndex++;
+export function incrementHookIndex(componentId: string): void {
+  if (componentRegistry.has(componentId)) {
+    const component = componentRegistry.get(componentId);
+    if (component) {
+      component.hooksIndex++;
+    }
+  }
 }
 
-export function resetHookIndex(): void {
+export function resetComponentIndex(componentId: string): void {
   hookIndex = 0;
+  currentComponentId = componentId;
+  if (componentRegistry.has(componentId)) {
+    const component = componentRegistry.get(componentId);
+    if (component) {
+      component.hooksIndex = 0;
+    }
+  }
 }
 
 export function cleanupHooks(): void {
@@ -56,31 +69,53 @@ export function cleanupHooks(): void {
 export function createHook<T>(
   hookType: string,
   initialValue: T,
-  hookFactory: (value: T, setValue: (value: T) => void) => [T, (value: T) => void]
+  hookFactory: (
+    value: T,
+    setValue: (value: T) => void
+  ) => [T, (value: T) => void]
 ): [T, (value: T) => void] {
-  const currentHooks = getCurrentHooks();
-  const currentIndex = getCurrentHookIndex();
-
-  // Initialize hook if it doesn't exist
-  if (!currentHooks[currentIndex]) {
-    const setValue = (value: T) => {
-      const newValue = (typeof value === 'function') ? (value as (prev: T) => T)(currentHooks[currentIndex].value) : value;
-      currentHooks[currentIndex].value = newValue;
-      setCurrentHooks(currentHooks);
-      rerender();
-      return newValue;
-    };
-
-    currentHooks[currentIndex] = {
-      type: hookType,
-      value: initialValue,
-      setter: setValue as (value: T) => void
-    };
-    setCurrentHooks(currentHooks);
+  const currentComponentId = getCurrentComponentId();
+  if (!currentComponentId) {
+    throw new Error('Cannot create hook without a component context');
   }
 
-  incrementHookIndex();
-  return [currentHooks[currentIndex].value, currentHooks[currentIndex].setter!];
+  const currentComponent = getCurrentComponent(currentComponentId);
+  if (!currentComponent) {
+    throw new Error('Cannot create hook without a component context');
+  }
+
+  // Use hook index instead of unique ID
+  const hookIndex = currentComponent.hooksIndex;
+  const hookId = `hook_${hookIndex}`;
+
+  // Check if hook already exists (for re-renders)
+  let currentHook = currentComponent.context?.get(hookId)?.hook;
+
+  if (!currentHook) {
+    // First render - create new hook
+    currentHook = registerHook(
+      hookId,
+      hookType,
+      initialValue,
+      hookFactory,
+      currentComponentId
+    );
+  }
+
+  const setValue = (value: T) => {
+    const newValue =
+      typeof value === 'function'
+        ? (value as (prev: T) => T)(currentHook.value)
+        : value;
+    currentHook.value = newValue;
+    rerender(currentComponentId);
+    return newValue;
+  };
+
+  currentHook.setter = setValue;
+
+  incrementHookIndex(currentComponentId);
+  return [currentHook.value, currentHook.setter];
 }
 
 // Updated useState using the generic system
@@ -88,8 +123,55 @@ export const useState = <T>(value: T) => {
   return createHook('useState', value, (currentValue, setValue) => {
     return [currentValue, setValue];
   });
+};
+
+export const startRender = (componentId: string) => {
+  const currentComponent = getCurrentComponent(componentId);
+  if (!currentComponent) {
+    throw new Error('Cannot start render without a component context');
+  }
+  currentComponent.hooksIndex = 0;
+};
+
+function generateHookId(): string {
+  return `hook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
-export const startRender = () => {
-  resetHookIndex();
+function registerHook(
+  id: string,
+  hookType: string,
+  initialValue: any,
+  hookFactory: (
+    value: any,
+    setValue: (value: any) => void
+  ) => [any, (value: any) => void],
+  currentComponentId: string
+): HookInstance {
+  const currentComponent = getCurrentComponent(currentComponentId);
+
+  if (!currentComponent) {
+    throw new Error('Cannot register hook without a component context');
+  }
+
+  currentComponent?.context?.set(id, {
+    id,
+    hook: { type: hookType, value: initialValue, setter: undefined },
+  });
+
+  if (!currentComponent) {
+    throw new Error('Cannot register hook without a component context');
+  }
+
+  const context = currentComponent.context?.get(id);
+  if (!context) {
+    throw new Error('Cannot register hook without a component context');
+  }
+
+  return context.hook;
+}
+
+function getCurrentComponent(
+  currentComponentId: string
+): ComponentInstance | null {
+  return componentRegistry.get(currentComponentId) || null;
 }
