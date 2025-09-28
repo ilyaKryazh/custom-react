@@ -13,5 +13,5 @@
       "my-lib/jsx-dev-runtime": ["./jsx/index.ts"]
     }
   },
-  "include": ["src", "jsx", "tests"]
+  "include": ["src", "jsx"]
 }

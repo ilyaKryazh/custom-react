@@ -1,6 +1,5 @@
-import { startRender, cleanupHooks } from './hooks/useState';
+import { startRender, cleanupHooks, createNode, updateProps } from './utils';
 import { vNode, HTMLprop } from './tree-types';
-import { createNode, updateProps } from './utils';
 
 export var prevNode:
   | null
@@ -358,10 +357,9 @@ export function createRoot(container: HTMLElement) {
       // Execute the component function and render
       const elements = component();
       render(elements, container, component);
-    }
+    },
   };
 }
 
 // Export hooks
-export { useState } from './hooks/useState';
-export { useEffect, useRef } from './hooks/useEffect';
+export { useState, useEffect, useRef } from './hooks/index';

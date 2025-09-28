@@ -1,4 +1,4 @@
-import { createHook } from './useState';
+import { createHook } from './createHook';
 
 // useEffect hook implementation
 export function useEffect(effect: () => void | (() => void), deps?: any[]) {
@@ -9,7 +9,7 @@ export function useEffect(effect: () => void | (() => void), deps?: any[]) {
       const cleanup = effect();
       if (cleanup) {
         // Store cleanup function for later execution
-        setValue({ ...currentValue, cleanup });
+        setValue({ ...currentValue, cleanup } as any);
       }
     };
 
@@ -17,18 +17,3 @@ export function useEffect(effect: () => void | (() => void), deps?: any[]) {
   });
 }
 
-// useRef hook implementation
-export function useRef<T>(initialValue: T) {
-  return createHook('useRef', { current: initialValue }, (currentValue, setValue) => {
-    const ref = {
-      get current() {
-        return currentValue.current;
-      },
-      set current(value: T) {
-        setValue({ current: value });
-      }
-    };
-
-    return [ref, () => {}]; // useRef doesn't need a setter
-  });
-}

@@ -1,5 +1,5 @@
 import { test, expect, describe } from 'vitest';
-import { createElement } from '../src/index.ts';
+import { createElement } from '../src/index';
 
 describe('createElement', () => {
   describe('HTML element creation', () => {

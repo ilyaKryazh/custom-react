@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderComponent, resetPrevNode, cleanup } from '../src/index';
+// @ts-ignore
 import Counter from './jsx/Counter';
 
 describe('setState Hook Test', () => {
