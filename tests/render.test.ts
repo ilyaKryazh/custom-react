@@ -90,8 +90,8 @@ describe('render function', () => {
 
       const renderedElement = rootElement.firstElementChild as HTMLInputElement;
       expect(renderedElement.getAttribute('value')).toBe('42');
-      expect(renderedElement.getAttribute('disabled')).toBe('true');
-      expect(renderedElement.getAttribute('checked')).toBe('false');
+      expect(renderedElement.getAttribute('disabled')).toBe('');
+      expect(renderedElement.getAttribute('checked')).toBe(null);
     });
 
     it('should render nested HTML elements', () => {

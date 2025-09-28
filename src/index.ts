@@ -338,6 +338,30 @@ export function popComponent() {
   componentStack.pop();
 }
 
+// createRoot function - React 18 style root API
+export function createRoot(container: HTMLElement) {
+  return {
+    render(component: Function) {
+      // Clear the container
+      container.innerHTML = '';
+
+      // Reset global state
+      resetPrevNode();
+      currentRoot = container;
+      currentElements = null;
+
+      // Register and render the component
+      const componentId = registerComponent(component, container, null);
+      setCurrentComponent(componentId);
+      startRender(componentId);
+
+      // Execute the component function and render
+      const elements = component();
+      render(elements, container, component);
+    }
+  };
+}
+
 // Export hooks
 export { useState } from './hooks/useState';
 export { useEffect, useRef } from './hooks/useEffect';

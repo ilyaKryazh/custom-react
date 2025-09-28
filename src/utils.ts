@@ -41,7 +41,13 @@ export function createNode(
           value as unknown as EventListener
         );
       } else {
-        el.setAttribute(getHTMLAttributeName(key), String(value));
+        if (typeof value === 'boolean') {
+          value
+            ? el.setAttribute(getHTMLAttributeName(key), '')
+            : el.removeAttribute(getHTMLAttributeName(key));
+        } else {
+            el.setAttribute(getHTMLAttributeName(key), String(value));
+        }
       }
     }
   }
@@ -61,7 +67,7 @@ export function updateProps(
   newProps: Record<string, any>
 ) {
   if (!el) return;
-
+  
   for (const key in oldProps) {
     if (!(key in newProps)) {
       if (isEventProp(key)) {
@@ -91,7 +97,13 @@ export function updateProps(
           newProps[key]
         );
       } else {
-        el.setAttribute(getHTMLAttributeName(key), String(newProps[key]));
+        if (typeof newProps[key] === 'boolean') {
+          newProps[key]
+            ? el.setAttribute(getHTMLAttributeName(key), '')
+            : el.removeAttribute(getHTMLAttributeName(key));
+        } else {
+          el.setAttribute(getHTMLAttributeName(key), String(newProps[key]));
+        }
       }
     }
   }
